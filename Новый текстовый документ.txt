@@ -1,0 +1,196 @@
+void _INIT ProgramInit(void)
+{
+/*	fb_motor.dt = 0.002;
+	fb_motor.ke=2;
+	fb_motor.Tm=0.04;
+	
+	fb_motor2.dt=0.002;
+	fb_motor2.ke=2;
+	fb_motor2.Tm=0.04;
+	
+	fb_controller.dt=0.002;
+	fb_controller.k_p=0.08;
+	fb_controller.k_i=2;
+	fb_controller.max_abs_value=24;*/
+	enable=1;
+	count=0;
+
+
+
+
+
+	fb_motor.dt = 0.002;
+	fb_motor.ke=2;
+	fb_motor.Tm=0.04;
+	
+	fb_motor2.dt=0.002;
+	fb_motor2.ke=2;
+	fb_motor2.Tm=0.04;
+	
+	fb_controller.dt=0.002;
+	fb_controller.k_p=8;
+	fb_controller.k_i=20;
+	fb_controller.max_abs_value=60;
+}
+
+
+
+
+
+
+void _CYCLIC ProgramCyclic(void)
+{
+	if(enable)
+	{
+		count += 10;
+		if(count<=5000)
+		{
+			speed=0;
+		}
+		else
+		{
+			speed=6;
+			if(count>=10000)
+			{
+				count=0;
+			}
+		}
+	}
+	fb_controller.e=speed-fb_motor.w;
+	fb_motor2.u=speed*fb_motor2.ke;
+	
+	FB_Regulator(&fb_controller);
+	
+	fb_motor.u=fb_controller.u*fb_motor.ke;
+	
+	FB_Motor(&fb_motor);
+	FB_Motor(&fb_motor2);
+}
+
+
+
+
+
+
+void FB_Motor(struct FB_Motor* inst)
+{
+	inst->integrator.in = (inst->u / inst->ke - inst->w) * inst->dt / inst->Tm; //integr's in (incoming signal u multipled by 1/ke subtracting w then multipled by dt/Tm)
+	
+	//inst->integrator.out = inst->w;
+	
+	FB_Integrator(&(inst->integrator));			//calling integr
+	inst->w = inst->integrator.out;				//from 1 integr
+	
+	inst->integrator.in = inst->w * inst->dt;	//integr's in (incoming signal w multipled by dt)
+	
+	//inst->integrator.out = inst->phi;
+	
+	FB_Integrator(&(inst->integrator));			//calling integr
+	
+	inst->phi = inst->integrator.out; 			//outcoming signal phi
+}
+
+
+
+
+
+
+void FB_Regulator(struct FB_Regulator* inst)
+{
+	
+	/*
+	inst->integrator.in = inst->e * inst->k_i * inst->dt + inst->iyOld;	//integr's in (incoming signal e multipled by ki and dt adding old value)
+	FB_Integrator(&(inst->integrator));			//calling integr
+	
+	inst->abs_in_1 = inst->e * inst->k_p;		//limiter's in
+	
+	if(inst->abs_in_1 > inst->max_abs_value || inst->abs_in_1 < -inst->max_abs_value)	//if in is equal or more than limit
+		{
+			if(inst->abs_in_1 > 0)
+			{
+				inst->abs_out_1 = inst->max_abs_value;	//than limit the value
+			}
+			else
+			{
+				inst->abs_out_1 = -inst->max_abs_value;	//than limit the value
+			}
+	}	
+	else 										//else if in is less than limit
+	{
+		inst->abs_out_1 = inst->abs_in_1;		//than transmit the value to limiter's out
+	}
+	
+	inst->abs_in_2 = inst->abs_out_1 + inst->integrator.out;	//transmit summ of integral and proport parts to limiter's in
+
+	if(inst->abs_in_2 > inst->max_abs_value || inst->abs_in_2 < -inst->max_abs_value)		//if in is equal or more than limit
+	{
+		if(inst->abs_in_2 > 0)
+		{
+			inst->u = inst->max_abs_value;			//than limit the value and set to the outcoming signal u
+		}
+		else
+		{
+			inst->u = -inst->max_abs_value;			//than limit the value and set to the outcoming signal u
+		}
+	}
+	else 										//else if in is less than limit
+	{
+		inst->u = inst->abs_in_2;				//than transmit the value to limiter's out and set to the outcoming signal u
+	}
+	
+	inst->iyOld = inst->u - inst->abs_in_2;		//saving the current value
+	
+	
+	*/
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	inst->integrator.in=inst->e * inst->k_i * inst->dt + inst->iyOld;
+	
+	FB_Integrator(&(inst->integrator));
+	
+	inst->e_kp=inst->e*inst->k_p;
+	
+	inst->e_kp=(inst->e_kp > inst->max_abs_value || inst->e_kp < - inst->max_abs_value)?((inst->e_kp>0)?inst->max_abs_value:-inst->max_abs_value):inst->e_kp;
+	
+	inst->e_kp+=inst->integrator.out;
+	
+	inst->u=(inst->e_kp > inst->max_abs_value || inst->e_kp < - inst->max_abs_value)?((inst->e_kp>0)?inst->max_abs_value:-inst->max_abs_value):inst->e_kp;
+	
+	inst->iyOld=inst->u-inst->e_kp;
+	
+	
+	
+	
+	
+	
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+void FB_Integrator(struct FB_Integrator* inst)
+{
+	inst->out += inst->in /* inst->dt*/;
+}
+
